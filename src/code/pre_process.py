@@ -80,19 +80,24 @@ def handler(event, context):
                 print(f"Skipping invalid JSON line: {e}")
                 continue
 
-            processed_review = {
-                'reviewId' : {'S': f"{review_data['reviewerID']}-{uuid.uuid4()}"},
-                'reviewerID': {'S': review_data['reviewerID']},
-                'processedreviewText': {'S': preprocess_text(review_data['reviewText'])},
-                'processedSummary': {'S': preprocess_text(review_data['summary'])},
-                'overall': {'N': str(review_data['overall'])},
-                'profanityCheck': {'BOOL': False},
-                'sentiment': {'S': 'PENDING'}
-            }
-            value = review_data.get('overall')
-            if value is not None and not (isinstance(value, float) and math.isnan(value)):
-                processed_review['overall'] = {'N': str(value)}
+            try:
+                response = reviews_table.get_item(Key={'reviewId': f"{review_data['reviewerID']}-{review_data['asin']}-{review_data['unixReviewTime']}"})
+                if 'Item' not in response:
+                    processed_review = {
+                        'reviewId' : {'S': f"{review_data['reviewerID']}-{review_data['asin']}-{review_data['unixReviewTime']}"},
+                        'reviewerID': {'N': str(review_data['reviewerID'])},
+                        'processedreviewText': {'S': preprocess_text(review_data['reviewText'])},
+                        'processedSummary': {'S': preprocess_text(review_data['summary'])},
+                        'overall': {'N': str(review_data['overall'])},
+                        'profanityCheck': {'BOOL': False},
+                        'sentiment': {'S': 'PENDING'}
+                    }
+                    value = review_data.get('overall')
+                    if value is not None and not (isinstance(value, float) and math.isnan(value)):
+                        processed_review['overall'] = {'N': str(value)}
 
-            dynamodb.put_item(TableName=reviews_table, Item=processed_review)
-
-    return {'statusCode': 200}
+                    dynamodb.put_item(TableName=reviews_table, Item=processed_review)
+                    return {'statusCode': 200}
+                continue
+            except Exception:
+                continue

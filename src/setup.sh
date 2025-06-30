@@ -14,7 +14,13 @@ awslocal dynamodb create-table \
       AttributeName=reviewId,KeyType=RANGE \
   --billing-mode PAY_PER_REQUEST
 
-awslocal dynamodb create-table --table-name Users --attribute-definitions AttributeName=reviewerID,AttributeType=S --key-schema AttributeName=reviewerID,KeyType=HASH --billing-mode PAY_PER_REQUEST
+awslocal dynamodb create-table \
+  --table-name Users \
+  --attribute-definitions \
+  AttributeName=reviewerID,AttributeType=N \
+  --key-schema \
+    AttributeName=reviewerID,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST
 
 # Store configuration in SSM
 awslocal ssm put-parameter --name /review-app/buckets/reviews --type "String" --value "reviews-bucket"

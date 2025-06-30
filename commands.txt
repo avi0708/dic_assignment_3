@@ -1,3 +1,4 @@
+localstack start
 awslocal dynamodb delete-table --table-name Reviews  
 awslocal dynamodb scan --table-name Reviews
 docker cp .\setup.sh localstack-main:/tmp/setup.sh
