@@ -8,9 +8,14 @@ nltk.data.path.append(os.path.join(os.getcwd(), 'nltk_data'))
 
 sia = SentimentIntensityAnalyzer()
 
-s3 = boto3.client('s3', endpoint_url=os.getenv('LOCALSTACK_ENDPOINT'))
-dynamodb = boto3.client('dynamodb', endpoint_url=os.getenv('LOCALSTACK_ENDPOINT'))
-ssm = boto3.client('ssm', endpoint_url=os.getenv('LOCALSTACK_ENDPOINT'))
+endpoint_url = None
+if os.getenv("STAGE") == "local":
+    endpoint_url = "http://localhost.localstack.cloud:4566"
+
+s3 = boto3.client("s3", endpoint_url=endpoint_url)
+ssm = boto3.client("ssm", endpoint_url=endpoint_url)
+dynamodb = boto3.client("dynamodb",endpoint_url=endpoint_url)
+
 
 def get_sentiment(text):
     scores = sia.polarity_scores(text)
@@ -37,5 +42,4 @@ def handler(event, context):
                 UpdateExpression='SET sentiment = :sent',
                 ExpressionAttributeValues={':sent': {'S': overall_sentiment}}
             )
-            return {'statusCode': 200}
-        continue
+    return {'statusCode': 200}

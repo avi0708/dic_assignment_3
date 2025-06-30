@@ -1,22 +1,35 @@
-import sys
 import os
+import sys
+# === STEP 0: Setup DynamoDB connection ===
+os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+os.environ["AWS_ACCESS_KEY_ID"] = "test"
+os.environ["AWS_SECRET_ACCESS_KEY"] = "test"
+os.environ["STAGE"] = "local"
 import boto3
-from code.pre_process import handler  # your Lambda handler
+from lambdas.pre_process.pre_process import handler  # your Lambda handler
 
 # === CONFIGURATION ===
 LOCAL_FILE_PATH = os.path.join(os.getcwd(), 'data/test.json')
 BUCKET_NAME = "reviews-bucket"
 OBJECT_KEY = "test.json"
 
-# === STEP 0: Setup DynamoDB connection ===
-dynamodb = boto3.resource(
-    'dynamodb',
-    region_name='us-east-1',
-    endpoint_url='http://localhost:4566',  # LocalStack endpoint
-    aws_access_key_id='test',
-    aws_secret_access_key='test'
+
+s3 = boto3.client(
+    "s3", endpoint_url="http://localhost.localstack.cloud:4566"
 )
-table = dynamodb.Table('Reviews')
+ssm = boto3.client(
+    "ssm", endpoint_url="http://localhost.localstack.cloud:4566"
+)
+awslambda = boto3.client(
+    "lambda", endpoint_url="http://localhost.localstack.cloud:4566"
+)
+dynamodb = boto3.client(
+    "dynamodb", endpoint_url="http://localhost.localstack.cloud:4566"
+)
+dynamodbRes = boto3.resource(
+    "dynamodb", endpoint_url="http://localhost.localstack.cloud:4566"
+)
+table = dynamodbRes.Table('Reviews')
 
 def overview_reviews_table():
     print("\n=== Overview of Reviews DB ===")
@@ -60,7 +73,7 @@ def main():
     s3 = boto3.client(
         "s3",
         region_name="us-east-1",
-        endpoint_url="http://localhost:4566",
+        endpoint_url="http://localhost.localstack.cloud:4566",
         aws_access_key_id="test",
         aws_secret_access_key="test"
     )

@@ -8,41 +8,19 @@ import nltk
 import uuid, math
 from spellchecker import SpellChecker
 
-nltk.data.path.append(os.path.join(os.getcwd(), 'nltk_data'))
-
+#nltk.data.path.append(os.path.join(os.getcwd(), 'nltk_data'))
+print(nltk.data.path)
 import os
 import boto3
 
-# LocalStack-compatible dummy AWS credentials
-os.environ["AWS_ACCESS_KEY_ID"] = "test"
-os.environ["AWS_SECRET_ACCESS_KEY"] = "test"
-os.environ["AWS_REGION"] = "us-east-1"
-os.environ["LOCALSTACK_ENDPOINT"] = "http://localhost:4566"
 
-s3 = boto3.client(
-    "s3",
-    region_name=os.environ["AWS_REGION"],
-    endpoint_url=os.environ["LOCALSTACK_ENDPOINT"],
-    aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-    aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"]
-)
+endpoint_url = None
+if os.getenv("STAGE") == "local":
+    endpoint_url = "http://localhost.localstack.cloud:4566"
 
-dynamodb = boto3.client(
-    "dynamodb",
-    region_name=os.environ["AWS_REGION"],
-    endpoint_url=os.environ["LOCALSTACK_ENDPOINT"],
-    aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-    aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"]
-)
-
-ssm = boto3.client(
-    "ssm",
-    region_name=os.environ["AWS_REGION"],
-    endpoint_url=os.environ["LOCALSTACK_ENDPOINT"],
-    aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-    aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"]
-)
-
+s3 = boto3.client("s3", endpoint_url=endpoint_url)
+ssm = boto3.client("ssm", endpoint_url=endpoint_url)
+dynamodb = boto3.client("dynamodb",endpoint_url=endpoint_url)
 
 def preprocess_text(text):
     spell = SpellChecker()

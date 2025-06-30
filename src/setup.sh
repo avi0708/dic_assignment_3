@@ -17,7 +17,7 @@ awslocal dynamodb create-table \
 awslocal dynamodb create-table \
   --table-name Users \
   --attribute-definitions \
-  AttributeName=reviewerID,AttributeType=N \
+  AttributeName=reviewerID,AttributeType=S \
   --key-schema \
     AttributeName=reviewerID,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST
