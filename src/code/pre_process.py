@@ -11,13 +11,13 @@ from spellchecker import SpellChecker
 nltk.data.path.append(os.path.join(os.getcwd(), 'nltk_data'))
 
 import os
+import boto3
 
 # LocalStack-compatible dummy AWS credentials
 os.environ["AWS_ACCESS_KEY_ID"] = "test"
 os.environ["AWS_SECRET_ACCESS_KEY"] = "test"
 os.environ["AWS_REGION"] = "us-east-1"
 os.environ["LOCALSTACK_ENDPOINT"] = "http://localhost:4566"
-import boto3
 
 s3 = boto3.client(
     "s3",
@@ -64,11 +64,10 @@ def preprocess_text(text):
 def handler(event, context):
     bucket_name = ssm.get_parameter(Name='/review-app/buckets/reviews')['Parameter']['Value']
     reviews_table = ssm.get_parameter(Name='/review-app/tables/reviews')['Parameter']['Value']
-
+    print("Insisde handler",event)
     for record in event['Records']:
         key = record['s3']['object']['key']
         obj = s3.get_object(Bucket=bucket_name, Key=key)
-
         # Process each line as a separate JSON object
         for line in obj['Body'].read().decode('utf-8').splitlines():
             if not line.strip():
@@ -79,13 +78,18 @@ def handler(event, context):
             except json.JSONDecodeError as e:
                 print(f"Skipping invalid JSON line: {e}")
                 continue
-
             try:
-                response = reviews_table.get_item(Key={'reviewId': f"{review_data['reviewerID']}-{review_data['asin']}-{review_data['unixReviewTime']}"})
+                review_id = f"{review_data['reviewerID']}-{review_data['asin']}-{review_data['unixReviewTime']}"
+                response = dynamodb.get_item(
+                    TableName=reviews_table,
+                    Key={
+                        'reviewerID': {'S': str(review_data['reviewerID'])},
+                        'reviewId': {'S': review_id}
+                        })
                 if 'Item' not in response:
                     processed_review = {
                         'reviewId' : {'S': f"{review_data['reviewerID']}-{review_data['asin']}-{review_data['unixReviewTime']}"},
-                        'reviewerID': {'N': str(review_data['reviewerID'])},
+                        'reviewerID': {'S': str(review_data['reviewerID'])},
                         'processedreviewText': {'S': preprocess_text(review_data['reviewText'])},
                         'processedSummary': {'S': preprocess_text(review_data['summary'])},
                         'overall': {'N': str(review_data['overall'])},
@@ -97,7 +101,7 @@ def handler(event, context):
                         processed_review['overall'] = {'N': str(value)}
 
                     dynamodb.put_item(TableName=reviews_table, Item=processed_review)
-                    return {'statusCode': 200}
+            except Exception as e:
+                print(f"Exception occurred: {e}")
                 continue
-            except Exception:
-                continue
+    return {'statusCode': 200}
