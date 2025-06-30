@@ -1,0 +1,36 @@
+
+# sample_reviews/positive_review.json
+{
+    "customerId": "customer_001",
+    "reviewId": "review_001",
+    "overall": 5,
+    "summary": "Excellent product, highly recommended!",
+    "reviewText": "I absolutely love this product! The quality is outstanding and it exceeded my expectations. The customer service was also fantastic. I would definitely recommend this to anyone looking for a high-quality solution."
+}
+
+# sample_reviews/negative_review.json
+{
+    "customerId": "customer_002",
+    "reviewId": "review_002",
+    "overall": 1,
+    "summary": "Terrible experience, very disappointed",
+    "reviewText": "This product is awful and completely useless. The quality is poor and it broke within a week. Customer service was unhelpful and rude. I regret purchasing this and want my money back."
+}
+
+# sample_reviews/profane_review.json
+{
+    "customerId": "customer_003",
+    "reviewId": "review_003",
+    "overall": 1,
+    "summary": "This damn product is shit",
+    "reviewText": "What a piece of crap this product is! It's fucking terrible and the company doesn't give a damn about customers. This bullshit waste of money should be banned from the market."
+}
+
+# sample_reviews/neutral_review.json
+{
+    "customerId": "customer_004",
+    "reviewId": "review_004",
+    "overall": 3,
+    "summary": "Average product with mixed results",
+    "reviewText": "The product has some good features but also some limitations. It works as advertised but nothing special. The price is reasonable for what you get. Customer service was okay."
+}
