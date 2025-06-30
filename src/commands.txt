@@ -1,0 +1,97 @@
+conda create --name dic3 python=3.11.6 pip --file requirements.txt
+conda activate dic3
+
+localstack start
+
+pip install boto3 nltk spellchecker profanityfilter awscli-local
+python -c "import nltk; nltk.download('vader_lexicon')"; python -c "import nltk; nltk.download('punkt')"; python -c "import nltk; nltk.download('stopwords')"; python -c "import nltk; nltk.download('wordnet')" 
+
+
+
+
+localstack start
+awslocal dynamodb delete-table --table-name Reviews  
+awslocal dynamodb scan --table-name Reviews
+docker cp .\setup.sh localstack-main:/tmp/setup.sh
+docker exec -it localstack-main chmod +x /tmp/setup.sh
+docker exec -it localstack-main sh /tmp/setup.sh
+
+docker cp .\setup_trigger.sh localstack-main:/tmp/setup_trigger.sh
+docker exec -it localstack-main sh /tmp/setup_trigger.sh
+
+Compress-Archive -Path .\package\*, .\pre_process.py -DestinationPath pre_process.zip
+
+awslocal lambda delete-function --function-name pre-process
+
+
+awslocal logs delete-log-group --log-group-name /aws/lambda/pre-process
+awslocal s3 rm s3://reviews-bucket --recursive
+awslocal dynamodb scan --table-name Reviews
+awslocal s3 cp data/test.json s3://reviews-bucket/test2.json
+
+awslocal lambda update-function-code --function-name pre-process --zip-file fileb://pre_process.zip
+awslocal lambda get-function --function-name pre-process
+awslocal lambda create-function `
+   --function-name pre-process `
+   --runtime python3.13 `
+   --handler pre_process.handler `
+   --zip-file fileb://pre_process.zip `
+   --role arn:aws:iam::000000000000:role/lambda-role `
+   --environment Variables="{STAGE=local}"
+
+awslocal logs get-log-events --log-group-name /aws/lambda/pre-process --log-stream-name '2025/06/30/[$LATEST]314f5a7fc08e159fcb216a3aec87477b' --limit 50
+
+
+awslocal lambda add-permission `                                                           
+   --function-name pre-process `
+   --statement-id s3invoke `
+   --action lambda:InvokeFunction `
+   --principal s3.amazonaws.com `
+   --source-arn arn:aws:s3:::reviews-bucket
+
+awslocal lambda create-function `
+    --function-name profanity `
+    --runtime python3.13 `
+    --handler profanity.handler `
+    --zip-file fileb://profanity.zip `
+    --role arn:aws:iam::000000000000:role/lambda-role `
+    --environment Variables="{STAGE=local}"
+
+awslocal lambda update-function-code --function-name profanity --zip-file fileb://profanity.zip\
+awslocal lambda delete-function --function-name profanity
+
+awslocal lambda create-function `
+    --function-name sentiment `
+    --runtime python3.13 `
+    --handler sentiment.handler `
+    --zip-file fileb://sentiment.zip `
+    --role arn:aws:iam::000000000000:role/lambda-role `
+    --environment Variables="{STAGE=local}"
+
+awslocal lambda update-function-code --function-name sentiment --zip-file fileb://sentiment.zip\
+awslocal lambda delete-function --function-name sentiment
+
+docker cp .\package.zip localstack-main:/tmp/package.zip
+docker cp .\setup.sh localstack-main:/tmp/setup.sh
+docker exec -it localstack-main sh /tmp/setup.sh
+
+docker cp .\setup_trigger.sh localstack-main:/tmp/setup_trigger.sh
+docker exec -it localstack-main sh /tmp/setup_trigger.sh
+docker exec -it localstack-main sh -c "cd /tmp && ./setup.sh"
+
+
+docker cp .\setupnew.sh localstack-main:/tmp/setupnew.sh
+
+docker exec -it localstack-main sh -c "cd /tmp && ./setupnew.sh"
+
+awslocal s3 cp data/reviews_devset.json s3://reviews-bucket/reviews_devset.json
+
+#################RESULTS###############
+awslocal dynamodb scan --table-name Reviews --filter-expression "sentiment = :pos" --expression-attribute-values '{":pos":{"S":"POSITIVE"}}' --select "COUNT"
+awslocal dynamodb scan --table-name Reviews --filter-expression "sentiment = :neu" --expression-attribute-values '{":neu":{"S":"NEUTRAL"}}' --select "COUNT"
+awslocal dynamodb scan --table-name Reviews --filter-expression "sentiment = :neg" --expression-attribute-values '{":neg":{"S":"NEGATIVE"}}' --select "COUNT"
+awslocal dynamodb scan --table-name Reviews --filter-expression "profanityCheck = :true" --expression-attribute-values '{":true":{"BOOL":true}}' --select "COUNT"
+awslocal dynamodb scan --table-name Users --filter-expression "banned = :true" --expression-attribute-values '{":true":{"BOOL":true}}' --select "COUNT"
+
+
+awslocal s3 cp data/test_reviews.json s3://reviews-bucket/test_reviews.json
